@@ -1,96 +1,141 @@
-h2 {
-    text-align: center;
+:root {
+  --bg: #000000;
+  --fg: #ffff00;
+  --accent: #adff2f; /* greenyellow */
+  --accent-hover: #ffebcd; /* blanchedalmond */
+  --shuffle: #7fffd4; /* aquamarine */
+  --shuffle-hover: #ff00ff; /* magenta */
+  --copy: #ff7f50; /* coral */
+  --copy-hover: #9400d3; /* darkviolet */
 }
 
+* {
+  box-sizing: border-box;
+}
 
 body {
-
-    width: 300px;
-    background-color: black;
-    color: yellow;
-    font-family: interface, "Helvetica Neue", helvetica, sans-serif;
-    margin-bottom: 20px;
+  width: 320px;
+  margin: 0;
+  padding: 12px 12px 20px;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-input:focus, textarea:focus, button:focus{
-    outline: none;
+h1 {
+  margin: 8px 0 16px;
+  font-size: 1.25rem;
+  text-align: center;
 }
 
-
-#searchBarNButton {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
-
+/* Visually hide labels while keeping them available to screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-input {
-    width: 225px;
-    border-radius: 12px;
-    border: none;
-    padding-left: 10px;
+#searchForm {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  border: none;
+  border-radius: 12px;
+  padding-left: 12px;
+}
+
+input:focus,
+button:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 button {
-    background-color:greenyellow;
-    width: 50px;
-    height: 30px;
-    align-self: center;
-    border: none;
-    border-radius: 12px;
-    transition-duration: 0.4s;
-    font-weight: bold;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition-duration: 0.4s;
 }
 
-button:hover{
-
-    background-color: blanchedalmond;
+#searchButton {
+  width: 50px;
+  height: 32px;
+  background-color: var(--accent);
 }
 
-#gif iframe{
-    width: 100%;
-    margin-top: 20px;
-    margin-bottom: 20px;  
-    border: 0px;
+#searchButton:hover {
+  background-color: var(--accent-hover);
 }
 
-#showMeSomethingElse{
-    color: white;
+.status {
+  min-height: 1.2em;
+  margin: 16px 0 0;
+  text-align: center;
+  color: var(--fg);
 }
 
-#showMeSomethingElse button{
-    background-color: aquamarine;
-    width: 200px;
-    height: 30px;
-    align-self: center;
-    border: none;
-    border-radius: 12px;
-    transition-duration: 0.4s;
-    font-weight: bold;
-   
+.gif {
+  text-align: center;
 }
 
-#showMeSomethingElse button:hover{
-
-    background-color: magenta;
+.gif iframe {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-top: 16px;
+  border: 0;
 }
 
-#copyLink button {
-    background-color:coral;
-    width: 100px;
-    height: 30px;
-    align-self: center;
-    border: none;
-    border-radius: 12px;
-    transition-duration: 0.4s;
-    font-weight: bold;
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-#copyLink button:hover{
-
-    background-color: darkviolet;
+.shuffle {
+  width: 200px;
+  height: 30px;
+  background-color: var(--shuffle);
 }
 
+.shuffle:hover {
+  background-color: var(--shuffle-hover);
+}
 
+.copy {
+  width: 120px;
+  height: 30px;
+  background-color: var(--copy);
+}
 
+.copy:hover {
+  background-color: var(--copy-hover);
+}
 
+.copy:disabled {
+  background-color: #ffffff;
+  cursor: default;
+}
+
+footer .attribution {
+  margin: 16px 0 0;
+  text-align: center;
+  color: pink;
+  font-size: 0.85rem;
+}
