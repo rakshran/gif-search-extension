@@ -1,9 +1,0 @@
-name = "trengif-proxy"
-main = "src/worker.js"
-compatibility_date = "2024-09-23"
-
-# The GIPHY API key is NOT stored here. Provide it as a secret instead:
-#   wrangler secret put GIPHY_API_KEY
-#
-# For local development you can place it in a gitignored `.dev.vars` file:
-#   GIPHY_API_KEY = "your-key"

@@ -1,12 +1,7 @@
-# Dependencies
-node_modules/
+# Local config containing your GIPHY API key — never commit this
+config.js
 
-# Cloudflare Wrangler
-.wrangler/
-proxy/.dev.vars
-
-# Build output / packaged extension
-dist/
+# Packaged extension
 *.zip
 
 # OS / editor cruft
