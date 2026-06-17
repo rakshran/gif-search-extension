@@ -3,15 +3,18 @@
 /**
  * TrenGIF popup logic.
  *
- * Flow: the user enters a search term -> we ask our Cloudflare Worker proxy
- * (which holds the GIPHY API key as a server-side secret) for matching GIFs ->
- * we display a random one and expose "shuffle" and "copy link" actions.
+ * Flow: the user enters a search term -> we query the GIPHY search API for
+ * matching GIFs -> we display a random one and expose "shuffle" and
+ * "copy link" actions.
  *
- * The proxy keeps the GIPHY key out of the published extension. See
- * proxy/README.md and config.js for setup.
+ * The GIPHY API key is read from config.js (window.TRENGIF_CONFIG). See
+ * config.sample.js for setup.
  */
 
-const API_BASE = (window.TRENGIF_CONFIG && window.TRENGIF_CONFIG.API_BASE) || "";
+const GIPHY_API_KEY =
+  (window.TRENGIF_CONFIG && window.TRENGIF_CONFIG.GIPHY_API_KEY) || "";
+const GIPHY_SEARCH_URL = "https://api.giphy.com/v1/gifs/search";
+const RESULT_LIMIT = 30;
 
 // Cached DOM references.
 const form = document.getElementById("searchForm");
@@ -48,7 +51,7 @@ function clearResults() {
 
 /**
  * Picks a random GIF from currentResults (avoiding an immediate repeat when
- * possible) and renders it via a sandboxed iframe using GIPHY's embed URL.
+ * possible) and renders it via an iframe using GIPHY's embed URL.
  */
 function renderRandomGif() {
   if (currentResults.length === 0) {
@@ -63,7 +66,7 @@ function renderRandomGif() {
   currentGif = next;
 
   const iframe = document.createElement("iframe");
-  iframe.src = next.embedUrl;
+  iframe.src = next.embed_url;
   iframe.title = next.title || "GIF result";
   iframe.loading = "lazy";
   iframe.allowFullscreen = true;
@@ -74,7 +77,7 @@ function renderRandomGif() {
   copyButton.disabled = false;
 }
 
-/** Fetches GIFs for the given term from the proxy and renders one. */
+/** Fetches GIFs for the given term from GIPHY and renders one. */
 async function search(term) {
   const query = term.trim();
   if (!query) {
@@ -82,8 +85,8 @@ async function search(term) {
     return;
   }
 
-  if (!API_BASE) {
-    setStatus("Not configured: set API_BASE in config.js.");
+  if (!GIPHY_API_KEY || GIPHY_API_KEY === "YOUR_GIPHY_API_KEY") {
+    setStatus("Not configured: add your GIPHY API key to config.js.");
     return;
   }
 
@@ -91,9 +94,15 @@ async function search(term) {
   setStatus("Searching…");
 
   try {
-    const url = `${API_BASE.replace(/\/$/, "")}/search?q=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
+    const url = new URL(GIPHY_SEARCH_URL);
+    url.searchParams.set("api_key", GIPHY_API_KEY);
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", String(RESULT_LIMIT));
+    url.searchParams.set("offset", "0");
+    url.searchParams.set("rating", "g");
+    url.searchParams.set("lang", "en");
 
+    const response = await fetch(url.toString());
     if (!response.ok) {
       throw new Error(`Request failed (${response.status})`);
     }

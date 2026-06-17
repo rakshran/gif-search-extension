@@ -20,6 +20,6 @@
     }
   },
   "host_permissions": [
-    "https://trengif-proxy.YOUR-SUBDOMAIN.workers.dev/*"
+    "https://api.giphy.com/*"
   ]
 }

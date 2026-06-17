@@ -20,8 +20,8 @@ latest version from source today, see [Development](#development).
 ## Privacy
 
 TrenGIF does not collect, store, or sell any personal data. The search terms you
-type are sent over HTTPS solely to fetch matching GIFs — nothing is tracked or
-saved. Full details in [`PRIVACY.md`](PRIVACY.md).
+type are sent over HTTPS to GIPHY solely to fetch matching GIFs — nothing is
+tracked or saved. Full details in [`PRIVACY.md`](PRIVACY.md).
 
 ## Powered by GIPHY
 
@@ -31,14 +31,23 @@ terms.
 
 ## Development
 
-TrenGIF is two small pieces:
+TrenGIF is a single Chrome extension that calls the GIPHY API directly using an
+API key you supply.
 
-- the **extension** (this folder) — the popup UI and logic, and
-- a **backend proxy** ([`proxy/`](proxy/)) — so the GIPHY API key lives on the
-  server as a secret and is never bundled into the published extension.
+1. Get a free key from the [GIPHY developer dashboard](https://developers.giphy.com/dashboard/).
+2. Copy the config template and add your key:
+   ```bash
+   cp config.sample.js config.js   # then paste your key into config.js
+   ```
+3. Load it: open `chrome://extensions`, enable **Developer mode**, click
+   **Load unpacked**, and select this folder.
 
-To build, configure, and run it locally, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
-Proxy setup and deployment live in [`proxy/README.md`](proxy/README.md).
+More detail in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+> **Note on the API key:** a browser extension can't truly hide an API key —
+> whatever you ship in `config.js` is bundled into the published extension and is
+> extractable by anyone. Use a key dedicated to this project and watch its usage
+> limits.
 
 ## License
 
