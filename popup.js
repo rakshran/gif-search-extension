@@ -1,121 +1,146 @@
+"use strict";
 
-// function to enable the press enter to search functionality
-document.getElementById('searchTermInput').addEventListener('keydown', function onEvent(event) {
-    if (event.key === 'Enter') {
-        document.getElementById("button").click();
+/**
+ * TrenGIF popup logic.
+ *
+ * Flow: the user enters a search term -> we ask our Cloudflare Worker proxy
+ * (which holds the GIPHY API key as a server-side secret) for matching GIFs ->
+ * we display a random one and expose "shuffle" and "copy link" actions.
+ *
+ * The proxy keeps the GIPHY key out of the published extension. See
+ * proxy/README.md and config.js for setup.
+ */
+
+const API_BASE = (window.TRENGIF_CONFIG && window.TRENGIF_CONFIG.API_BASE) || "";
+
+// Cached DOM references.
+const form = document.getElementById("searchForm");
+const input = document.getElementById("searchTermInput");
+const statusEl = document.getElementById("status");
+const gifEl = document.getElementById("gif");
+const actionsEl = document.getElementById("actions");
+const shuffleButton = document.getElementById("shuffleButton");
+const copyButton = document.getElementById("copyButton");
+
+// Holds the most recent successful search results so "shuffle" can pick again
+// without re-hitting the network.
+let currentResults = [];
+let currentGif = null;
+
+/** Returns a random integer in the half-open range [min, max). */
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min);
+}
+
+/** Updates the status line. Pass an empty string to clear it. */
+function setStatus(message) {
+  statusEl.textContent = message || "";
+}
+
+/** Clears the rendered GIF and hides the action buttons. */
+function clearResults() {
+  gifEl.replaceChildren();
+  actionsEl.hidden = true;
+  currentGif = null;
+}
+
+/**
+ * Picks a random GIF from currentResults (avoiding an immediate repeat when
+ * possible) and renders it via a sandboxed iframe using GIPHY's embed URL.
+ */
+function renderRandomGif() {
+  if (currentResults.length === 0) {
+    return;
+  }
+
+  let next = currentResults[getRandomInt(0, currentResults.length)];
+  if (currentResults.length > 1 && currentGif && next.id === currentGif.id) {
+    // Try once more to avoid showing the same GIF back-to-back.
+    next = currentResults[getRandomInt(0, currentResults.length)];
+  }
+  currentGif = next;
+
+  const iframe = document.createElement("iframe");
+  iframe.src = next.embedUrl;
+  iframe.title = next.title || "GIF result";
+  iframe.loading = "lazy";
+  iframe.allowFullscreen = true;
+
+  gifEl.replaceChildren(iframe);
+  actionsEl.hidden = false;
+  copyButton.textContent = "Copy link";
+  copyButton.disabled = false;
+}
+
+/** Fetches GIFs for the given term from the proxy and renders one. */
+async function search(term) {
+  const query = term.trim();
+  if (!query) {
+    setStatus("Type something to search for a GIF.");
+    return;
+  }
+
+  if (!API_BASE) {
+    setStatus("Not configured: set API_BASE in config.js.");
+    return;
+  }
+
+  clearResults();
+  setStatus("Searching…");
+
+  try {
+    const url = `${API_BASE.replace(/\/$/, "")}/search?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
     }
+
+    const payload = await response.json();
+    currentResults = Array.isArray(payload.data) ? payload.data : [];
+
+    if (currentResults.length === 0) {
+      setStatus(`No GIFs found for “${query}”. Try another search.`);
+      return;
+    }
+
+    setStatus("");
+    renderRandomGif();
+  } catch (error) {
+    console.error("TrenGIF search failed:", error);
+    setStatus("Something went wrong. Check your connection and try again.");
+    clearResults();
+  }
+}
+
+/** Copies the current GIF's shareable URL to the clipboard. */
+async function copyCurrentLink() {
+  if (!currentGif || !currentGif.url) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(currentGif.url);
+    copyButton.textContent = "Copied!";
+    copyButton.disabled = true;
+  } catch (error) {
+    console.error("TrenGIF copy failed:", error);
+    setStatus("Couldn't copy the link.");
+  }
+}
+
+// Event listeners are attached exactly once, at startup.
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  search(input.value);
 });
 
-//main function call
-document.getElementById('button').addEventListener('click',getGIF);
+shuffleButton.addEventListener("click", () => {
+  if (currentResults.length > 0) {
+    renderRandomGif();
+  }
+});
 
-var SECRET_API_KEY = config.SECRET_API_KEY;
-
-//define the main function
-function getGIF(){
-
-	//extract the search term value
-	var searchTerm = document.getElementById('searchTermInput').value;
-	
-	//function to generate a random integer between two integers min and max
-    function getRandomInt(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
-      };
-
-
-	//define a new variable xhr for making an XMLHttpRequest
-	var xhr = new XMLHttpRequest();
-
-
-	//url for the API call - include the search term to get the desired results
-    GIFurl = 'https://api.giphy.com/v1/gifs/search?api_key='+SECRET_API_KEY+'='+searchTerm+'&limit=30&offset=0&rating=g&lang=en';
-
-
-	//defining the call structure
-	xhr.open('GET',GIFurl, true);
-
-
-	//defining what will happen when the result is fetched from the API and the results are loading
-	xhr.onload = function() {
-		if(this.status == 200){
-
-			//parsing the JSON response
-			gif = JSON.parse(this.responseText);
-
-			//generating a random number to randomly throw one of the 30 results that we have fetched from the API
-            randomNumber = getRandomInt(1,30);
-
-
-			//defining the html elements for output - gif, show me something else button and the copy link button			
-			var output_gif = '<iframe id="myiFrame" src="'+gif['data'][randomNumber]['embed_url']+'"></iframe><br>';
-			var output_showMeSomethingElse = '<button>Show me something else!</button>';
-			var output_copyLink = '<br><br><button>Copy link</button><br>';
-
-
-			//define the variable shareURL for using it later to enable the copy link for sharing functionality
-			var shareURL = gif['data'][randomNumber]['url'];
-			//shareURL.setAttribute('id','shareURLID')
-			shareURL.id = 'shareURLID';	
-		}
-
-		
-		//assigning the HTML elements their relevant values
-		document.getElementById('gif').innerHTML = output_gif;
-		document.getElementById('showMeSomethingElse').innerHTML = output_showMeSomethingElse;
-		document.getElementById('copyLink').innerHTML = output_copyLink;
-
-
-		//defining the event and function for the copy link url
-		document.getElementById('copyLink').addEventListener('click',copyText);
-		function copyText(){
-
-
-		//click to copy only works with textarea or input HTML elements - creating the element here
-		var linkToBeCopied = document.createElement('input');
-
-
-		//creating the id for the HTML element for easy manipulation - the random # generator ensures unique id creation
-		var shareURLID = 'shareURL'+randomNumber+getRandomInt(1,1000);
-
-		
-		//the created input element is set to readonly and positioned out of the visible screen
-		linkToBeCopied.setAttribute('id', shareURLID);
-		linkToBeCopied.setAttribute('readonly','');
-		linkToBeCopied.style.position = 'absolute';   		    
-		linkToBeCopied.style.left = '-9999px'; 
-		document.body.appendChild(linkToBeCopied);
-
-		
-		//actual copying action
-		document.getElementById(shareURLID).value=shareURL;
-		copyText = document.getElementById('shareURLID');
-		linkToBeCopied.select();
-		document.execCommand("copy");
-		document.getElementById('copyLink').innerHTML = '<br><br><button style="background-color:white">Copied</button><br>';
-		
-
-		};
-
-	
-
-	}
-
-
-	//sending the request to server to fetch the value from the API
-	xhr.send();
-	
-	
-	//event listener for show me something else button - recursive function call because same action is to be repeated
-	document.getElementById('showMeSomethingElse').addEventListener('click',getGIF);
-
-	
-};
-
-
-
-	
-	
-
-	
+copyButton.addEventListener("click", copyCurrentLink);
